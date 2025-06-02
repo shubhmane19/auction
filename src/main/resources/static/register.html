@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Register</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: linear-gradient(135deg, #ACB6E5, #74ebd5);
+      height: 100vh;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .register-container {
+      background-color: #ffffffcc;
+      padding: 2rem 2.5rem;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .register-container:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
+    }
+
+    .form-control:focus {
+      box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+
+    .btn-primary {
+      background-color: #007bff;
+      border: none;
+    }
+
+    .btn-primary:hover {
+      background-color: #0056b3;
+    }
+
+    .text-link {
+      display: block;
+      margin-top: 1rem;
+      text-align: center;
+      color: #007bff;
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+
+    .text-link:hover {
+      color: #0056b3;
+    }
+
+    .toggle-password {
+      position: absolute;
+      right: 15px;
+      top: 38px;
+      cursor: pointer;
+      color: #6c757d;
+    }
+
+    .position-relative {
+      position: relative;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="register-container">
+    <h3 class="text-center mb-4">Register</h3>
+    <form id="register-form" novalidate>
+      <div class="mb-3">
+        <label for="username" class="form-label">Username</label>
+        <input type="text" class="form-control" id="username" required minlength="3">
+        <div class="invalid-feedback">Please enter a username (min 3 characters).</div>
+      </div>
+      <div class="mb-3 position-relative">
+        <label for="password" class="form-label">Password</label>
+        <input type="password" class="form-control" id="password" required minlength="6">
+        <span class="toggle-password" onclick="togglePassword('password')">👁️</span>
+        <div class="invalid-feedback">Password must be at least 6 characters long.</div>
+      </div>
+      <div class="mb-3 position-relative">
+        <label for="confirm-password" class="form-label">Confirm Password</label>
+        <input type="password" class="form-control" id="confirm-password" required>
+        <span class="toggle-password" onclick="togglePassword('confirm-password')">👁️</span>
+        <div class="invalid-feedback" id="confirm-feedback">Passwords must match.</div>
+      </div>
+      <button type="submit" class="btn btn-primary w-100">Register</button>
+    </form>
+    <a href="login.html" class="text-link">Already have an account? Login</a>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    function togglePassword(id) {
+      const input = document.getElementById(id);
+      const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+      input.setAttribute('type', type);
+    }
+
+    (function () {
+      'use strict';
+      const form = document.getElementById('register-form');
+      const password = document.getElementById('password');
+      const confirmPassword = document.getElementById('confirm-password');
+      const confirmFeedback = document.getElementById('confirm-feedback');
+
+      form.addEventListener('submit', function (event) {
+        let valid = form.checkValidity();
+
+        if (password.value !== confirmPassword.value) {
+          confirmPassword.classList.add('is-invalid');
+          confirmFeedback.style.display = 'block';
+          valid = false;
+        } else {
+          confirmPassword.classList.remove('is-invalid');
+          confirmFeedback.style.display = 'none';
+        }
+
+        if (!valid) {
+          event.preventDefault();
+          event.stopPropagation();
+          form.classList.add('was-validated');
+        } else {
+          event.preventDefault();
+          const username = $('#username').val();
+          const passwordVal = $('#password').val();
+
+          $.ajax({
+            url: '/api/users/register',
+            type: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({ username, password: passwordVal }),
+            success: function () {
+              alert('Registration successful');
+              // window.location.href = "login.html";
+            },
+            error: function () {
+              alert('Registration failed');
+            }
+          });
+        }
+      }, false);
+    })();
+  </script>
+</body>
+</html>
