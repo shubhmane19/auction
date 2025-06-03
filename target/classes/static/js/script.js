@@ -4,16 +4,26 @@ function togglePassword(id) {
   input.setAttribute('type', type);
 }
 
-// Register form handler
 $(document).ready(function () {
+  // Register form handler
   const registerForm = $('#register-form');
   if (registerForm.length) {
     registerForm.submit(function (event) {
       event.preventDefault();
 
-      const username = $('#username').val();
-      const password = $('#password').val();
-      const confirmPassword = $('#confirm-password').val();
+      const username = $('#username').val().trim();
+      const password = $('#password').val().trim();
+      const confirmPassword = $('#confirm-password').val().trim();
+
+      if (!username || !password || !confirmPassword) {
+        alert('All fields are required');
+        return;
+      }
+
+      if (password.length < 6) {
+        alert('Password must be at least 6 characters long');
+        return;
+      }
 
       if (password !== confirmPassword) {
         $('#confirm-password').addClass('is-invalid');
@@ -30,7 +40,7 @@ $(document).ready(function () {
         contentType: 'application/json',
         data: JSON.stringify({ username, password }),
         success: function () {
-          alert('Registration successful! Please login.');
+          alert('Registration successful! Redirecting to login.');
           window.location.href = 'login.html';
         },
         error: function (xhr) {
@@ -46,18 +56,26 @@ $(document).ready(function () {
     loginForm.submit(function (event) {
       event.preventDefault();
 
-      const username = $('#username').val();
-      const password = $('#password').val();
+      const username = $('#username').val().trim();
+      const password = $('#password').val().trim();
+
+      if (!username || !password) {
+        alert('Please enter both username and password.');
+        return;
+      }
 
       $.ajax({
         url: '/api/users/login',
         type: 'POST',
         contentType: 'application/json',
         data: JSON.stringify({ username, password }),
-        success: function () {
-          alert('Login successful!');
-          // Redirect to dashboard or homepage
-          window.location.href = 'index.html';
+        success: function (data) {
+          if (data.valid) {
+            alert('Login successful! Redirecting...');
+            window.location.href = 'index.html';
+          } else {
+            alert('Invalid credentials. Please try again.');
+          }
         },
         error: function (xhr) {
           alert(xhr.responseJSON?.message || 'Login failed');

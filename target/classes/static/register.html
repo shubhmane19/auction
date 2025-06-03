@@ -92,12 +92,15 @@
         <span class="toggle-password" onclick="togglePassword('confirm-password')">👁️</span>
         <div class="invalid-feedback" id="confirm-feedback">Passwords must match.</div>
       </div>
-      <button type="submit" class="btn btn-primary w-100">Register</button>
+      <a href="index.html" class="btn btn-primary w-100">Register</a>
+
     </form>
     <a href="login.html" class="text-link">Already have an account? Login</a>
   </div>
 
   <script src="script.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  
   <script>
     function togglePassword(id) {
       const input = document.getElementById(id);

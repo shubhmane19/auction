@@ -1,45 +1,34 @@
 package com.example.auction.controller;
 
-import java.util.List;
-import java.util.Optional;
-
+import com.example.auction.model.Bid;
+import com.example.auction.service.BidService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import com.example.auction.repository.BidRepository;
-import com.example.auction.repository.ProductRepository;
-
-import com.example.auction.model.*;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/bids")
 public class BidController {
 
     @Autowired
-    private BidRepository bidRepository;
+    private BidService bidService;
 
-    @Autowired
-    private ProductRepository productRepository;
-
-    @PostMapping
-    public ResponseEntity<?> placeBid(@RequestParam Long productId, @RequestParam double bidAmount) {
-        Optional<Product> productOpt = productRepository.findById(productId);
-        if (productOpt.isEmpty()) return ResponseEntity.badRequest().body("Product not found");
-
-        Bid bid = new Bid();
-        bid.setAmount(bidAmount);
-        bid.setProduct(productOpt.get());
-        return ResponseEntity.ok(bidRepository.save(bid));
+    @PostMapping("/place")
+    public ResponseEntity<?> placeBid(@RequestBody Bid bid) {
+        try {
+            bidService.placeBid(bid);
+            return ResponseEntity.ok("Bid placed successfully");
+        } catch (Exception e) {
+            // Consider logging the error for debugging:
+            // log.error("Error placing bid: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
-    @GetMapping("/product/{productId}")
-    public List<Bid> getBidsForProduct(@PathVariable Long productId) {
-        return bidRepository.findByProductId(productId);
+    @GetMapping("/auction/{auctionId}")
+    public ResponseEntity<List<Bid>> getBidsForAuction(@PathVariable Long auctionId) {
+        return ResponseEntity.ok(bidService.getBidsForAuction(auctionId));
     }
 }

@@ -80,12 +80,15 @@
         <input type="password" class="form-control" id="password" required>
         <span class="toggle-password" onclick="togglePassword()">👁️</span>
       </div>
-      <button type="submit" class="btn btn-primary w-100">Login</button>
+      <a href="index.html" class="btn btn-primary w-100">Login</a>
+
     </form>
     <a href="register.html" class="text-link">Don't have an account? Register</a>
   </div>
 
   <script src="script.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  
   <script>
     function togglePassword() {
       const passwordInput = document.getElementById('password');

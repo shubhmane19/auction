@@ -21,6 +21,10 @@ public class User {
     }
 
     // Getters
+    public Long getId() { // <-- ADDED THIS GETTER
+        return id;
+    }
+
     public String getUsername() {
         return username;
     }
@@ -30,8 +34,16 @@ public class User {
     }
 
     // Setters
+    public void setId(Long id) { // <-- ADDED THIS SETTER
+        this.id = id;
+    }
+
     public void setUsername(String username) {
         this.username = username;
+        // Corrected: Removed accidental `this.password = password;`
+    }
+
+    public void setPassword(String password) { // Added missing setter for password
         this.password = password;
     }
 }
