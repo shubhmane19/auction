@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Auction House</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+        }
+        .auction-card {
+            transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+        }
+        .auction-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        .bid-button {
+            transition: background-color 0.3s ease-in-out, transform 0.1s ease-in-out;
+        }
+        .bid-button:active {
+            transform: scale(0.98);
+        }
+        .filter-sort-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            justify-content: center;
+        }
+        @media (min-width: 768px) {
+            .filter-sort-container {
+                justify-content: flex-start;
+            }
+        }
+        /* Custom scrollbar for bid history */
+        .bid-history-scroll {
+            max-height: 200px;
+            overflow-y: auto;
+            scrollbar-width: thin; /* For Firefox */
+            scrollbar-color: #a0aec0 #edf2f7; /* For Firefox */
+        }
+        .bid-history-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+        .bid-history-scroll::-webkit-scrollbar-track {
+            background: #edf2f7; /* Light track */
+            border-radius: 10px;
+        }
+        .bid-history-scroll::-webkit-scrollbar-thumb {
+            background-color: #a0aec0; /* Gray thumb */
+            border-radius: 10px;
+            border: 2px solid #edf2f7;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <header class="text-center mb-8">
+        <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-2">Auction House</h1>
+        <p class="text-lg text-gray-600">Find your next treasure!</p>
+    </header>
+
+    <!-- Main Auction Listing Page -->
+    <div id="mainAuctionPage" class="max-w-7xl mx-auto bg-white p-6 rounded-xl shadow-lg">
+        <!-- Search, Filter, Sort Section -->
+        <div class="mb-6 flex flex-col md:flex-row items-center justify-between gap-4">
+            <!-- Search Bar -->
+            <div class="relative w-full md:w-1/3">
+                <input type="text" id="searchInput" placeholder="Search auction items..."
+                       class="w-full p-3 pl-10 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
+                <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </div>
+
+            <div class="filter-sort-container w-full md:w-2/3">
+                <!-- Filter by Category -->
+                <select id="categoryFilter" class="p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm flex-grow md:flex-grow-0">
+                    <option value="all">All Categories</option>
+                    <option value="electronics">Electronics</option>
+                    <option value="antiques">Antiques</option>
+                    <option value="art">Art</option>
+                    <option value="jewelry">Jewelry</option>
+                    <option value="vehicles">Vehicles</option>
+                </select>
+
+                <!-- Sort By -->
+                <select id="sortOrder" class="p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm flex-grow md:flex-grow-0">
+                    <option value="expiry-asc">Expiry (Soonest)</option>
+                    <option value="expiry-desc">Expiry (Latest)</option>
+                    <option value="bid-asc">Bid (Low to High)</option>
+                    <option value="bid-desc">Bid (High to Low)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Auction Items Grid -->
+        <div id="auctionItemsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Auction items will be dynamically loaded here -->
+        </div>
+    </div>
+
+    <!-- Product Detail Page (Initially Hidden) -->
+    <div id="productDetailPage" class="hidden max-w-6xl mx-auto bg-white rounded-xl shadow-lg p-6">
+        <button id="backToAuctionsBtn" class="mb-6 flex items-center text-blue-600 hover:text-blue-800 font-semibold">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+            </svg>
+            Back to Auctions
+        </button>
+
+        <header class="mb-8 text-center">
+            <h1 id="productName" class="text-4xl font-extrabold text-gray-900 mb-2"></h1>
+            <p id="productTagline" class="text-xl text-gray-600"></p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Product Image Gallery -->
+            <div class="flex flex-col items-center">
+                <div class="w-full max-w-lg rounded-lg overflow-hidden shadow-md mb-4">
+                    <img id="mainProductImage" src="" alt="Product Main Image" class="w-full h-auto object-cover">
+                </div>
+                <div id="productThumbnails" class="flex space-x-2 overflow-x-auto pb-2">
+                    <!-- Thumbnails will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Product Details & Auction Info -->
+            <div class="flex flex-col space-y-6">
+                <!-- Description -->
+                <div class="bg-gray-50 p-6 rounded-lg shadow-sm">
+                    <h2 class="text-2xl font-semibold text-gray-900 mb-3">Description</h2>
+                    <p id="productDescription" class="text-gray-700 leading-relaxed"></p>
+                </div>
+
+                <!-- Specifications -->
+                <div class="bg-gray-50 p-6 rounded-lg shadow-sm">
+                    <h2 class="text-2xl font-semibold text-gray-900 mb-3">Specifications</h2>
+                    <ul id="productSpecs" class="list-disc list-inside text-gray-700 space-y-2">
+                        <!-- Specs will be loaded here -->
+                    </ul>
+                </div>
+
+                <!-- Auction Details -->
+                <div class="bg-blue-50 p-6 rounded-lg shadow-sm border border-blue-200">
+                    <h2 class="text-2xl font-semibold text-blue-800 mb-3">Auction Details</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-lg">
+                        <p class="font-medium text-gray-700">Auction Starts:</p>
+                        <p id="auctionStartDate" class="text-blue-700 font-semibold"></p>
+                        <p class="font-medium text-gray-700">Auction Ends:</p>
+                        <p id="auctionEndDate" class="text-red-600 font-semibold"></p>
+                        <p class="font-medium text-gray-700">Current Highest Bid:</p>
+                        <p id="currentHighestBid" class="text-green-700 font-bold text-2xl"></p>
+                        <p class="font-medium text-gray-700">Number of Bids:</p>
+                        <p id="numberOfBids" class="text-gray-700"></p>
+                    </div>
+                    <div class="mt-6">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-3">Place Your Bid</h3>
+                        <div class="flex flex-col sm:flex-row gap-4">
+                            <input type="number" id="bidAmount" placeholder="Enter your bid amount" class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 shadow-sm text-lg" min="0" step="1">
+                            <button id="placeBidButton" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-colors duration-200 text-lg">
+                                Place Bid
+                            </button>
+                        </div>
+                        <p id="bidMessage" class="mt-3 text-sm text-center text-red-500 hidden"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bid History -->
+        <div class="mt-8 bg-gray-50 p-6 rounded-lg shadow-sm">
+            <h2 class="text-2xl font-semibold text-gray-900 mb-4">Bid History</h2>
+            <div class="bid-history-scroll border border-gray-200 rounded-lg p-4">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-100 sticky top-0">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tl-lg">Bidder</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bid Amount</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tr-lg">Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bidHistoryTableBody" class="bg-white divide-y divide-gray-200">
+                        <!-- Bid entries will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center mt-8 text-gray-500 text-sm">
+        &copy; 2025 Auction House. All rights reserved.
+    </footer>
+
+    <script>
+        // Mock auction data
+        let auctionItems = [
+            {
+                id: 1,
+                name: "Vintage Rolex Watch",
+                tagline: "A timeless masterpiece of horology.",
+                image: "https://placehold.co/400x300/e0e0e0/333333?text=Rolex+Watch",
+                images: [
+                    "https://placehold.co/600x400/E0E0E0/333333?text=Rolex+Watch+1",
+                    "https://placehold.co/100x70/D1D5DB/4B5563?text=Rolex+Thumb+2",
+                    "https://placehold.co/100x70/D1D5DB/4B5563?text=Rolex+Thumb+3",
+                    "https://placehold.co/100x70/D1D5DB/4B5563?text=Rolex+Thumb+4"
+                ],
+                currentBid: 12500,
+                expiryTime: Date.now() + 1000 * 60 * 60 * 24 * 3 + 1000 * 60 * 30, // 3 days, 30 mins from now
+                startTime: Date.now() - 1000 * 60 * 60 * 24 * 2, // 2 days ago
+                category: "jewelry",
+                description: "This exquisite vintage Rolex Submariner, dating back to the 1970s, is a highly sought-after collector's item. Known for its robust design and iconic aesthetics, it features a classic black dial, luminous markers, and a unidirectional rotating bezel. The watch is in excellent working condition, maintaining accurate time. A perfect blend of history, craftsmanship, and investment potential.",
+                specs: [
+                    "<strong>Brand:</strong> Rolex",
+                    "<strong>Model:</strong> Submariner",
+                    "<strong>Year:</strong> Circa 1970s",
+                    "<strong>Movement:</strong> Automatic",
+                    "<strong>Case Material:</strong> Stainless Steel",
+                    "<strong>Dial Color:</strong> Black",
+                    "<strong>Condition:</strong> Excellent vintage condition with minor wear."
+                ],
+                bidHistory: [
+                    { bidder: "User***456", amount: 12500, time: Date.now() - 1000 * 60 * 5 },
+                    { bidder: "User***789", amount: 12400, time: Date.now() - 1000 * 60 * 15 },
+                    { bidder: "User***123", amount: 12300, time: Date.now() - 1000 * 60 * 30 },
+                    { bidder: "User***ABC", amount: 12200, time: Date.now() - 1000 * 60 * 60 },
+                    { bidder: "User***DEF", amount: 12100, time: Date.now() - 1000 * 60 * 60 * 2 },
+                    { bidder: "User***GHI", amount: 12000, time: Date.now() - 1000 * 60 * 60 * 3 }
+                ]
+            },
+            {
+                id: 2,
+                name: "Antique Wooden Chest",
+                tagline: "A beautifully preserved piece of history.",
+                image: "https://placehold.co/400x300/d0d0d0/444444?text=Wooden+Chest",
+                images: [
+                    "https://placehold.co/600x400/D0D0D0/444444?text=Wooden+Chest+1",
+                    "https://placehold.co/100x70/D1D5DB/4B5563?text=Chest+Thumb+2",
+                    "https://placehold.co/100x70/D1D5DB/4B5563?text=Chest+Thumb+3",
+                    "https://placehold.co/100x70/D1D5DB/4B5563?text=Chest+Thumb+4"
+                ],
+                currentBid: 800,
+                expiryTime: Date.now() + 1000 * 60 * 60 * 12, // 12 hours from now
+                startTime: Date.now() - 1000 * 60 * 60 * 24 * 1, // 1 day ago
+                category: "antiques",
+                description: "This magnificent antique wooden chest, crafted in the early 19th century, features intricate carvings and robust iron hardware. Perfect as a statement piece or for practical storage, it tells a story of bygone eras. The wood has developed a deep, rich patina over centuries, highlighting its authenticity and charm. A rare find for collectors of fine historical furniture.",
+                specs: [
+                    "<strong>Era:</strong> Early 19th Century",
+                    "<strong>Material:</strong> Solid Oak",
+                    "<strong>Dimensions:</strong> 48\" (L) x 24\" (W) x 28\" (H)",
+                    "<strong>Features:</strong> Hand-carved details, original iron fittings, spacious interior.",
+                    "<strong>Condition:</strong> Good antique condition, consistent with age; minor surface imperfections."
+                ],
+                bidHistory: [
+                    { bidder: "User***111", amount: 800, time: Date.now() - 1000 * 60 * 2 },
+                    { bidder: "User***222", amount: 750, time: Date.now() - 1000 * 60 * 10 },
+                    { bidder: "User***333", amount: 700, time: Date.now() - 1000 * 60 * 30 }
+                ]
+            },
+            {
+                id: 3,
+                name: "Modern Art Sculpture",
+                tagline: "A captivating piece for contemporary spaces.",
+                image: "https://placehold.co/400x300/c0c0c0/555555?text=Art+Sculpture",
+                images: [
+                    "https://placehold.co/600x400/C0C0C0/555555?text=Art+Sculpture+1",
+                    "https://placehold.co/100x70/D1D5DB/4B5563?text=Sculpture+Thumb+2",
+                    "https://placehold.co/100x70/D1D5DB/4B5563?text=Sculpture+Thumb+3"
+                ],
+                currentBid: 3500,
+                expiryTime: Date.now() + 1000 * 60 * 60 * 24 * 7, // 7 days from now
+                startTime: Date.now() - 1000 * 60 * 60 * 24 * 3, // 3 days ago
+                category: "art",
+                description: "An evocative modern abstract sculpture crafted from polished stainless steel and reclaimed wood. This piece explores themes of balance and tension, with its dynamic forms and contrasting materials. Ideal for a minimalist interior or as a focal point in a corporate lobby. Signed by the acclaimed contemporary artist, 'A. Virtuoso'.",
+                specs: [
+                    "<strong>Artist:</strong> A. Virtuoso",
+                    "<strong>Medium:</strong> Stainless Steel, Reclaimed Wood",
+                    "<strong>Dimensions:</strong> 36\" (H) x 18\" (W) x 12\" (D)",
+                    "<strong>Style:</strong> Abstract Modernism",
+                    "<strong>Year:</strong> 2023",
+                    "<strong>Condition:</strong> Pristine."
+                ],
+                bidHistory: [
+                    { bidder: "User***444", amount: 3500, time: Date.now() - 1000 * 60 * 10 },
+                    { bidder: "User***555", amount: 3200, time: Date.now() - 1000 * 60 * 45 }
+                ]
+            },
+            {
+                id: 4,
+                name: "Classic Car - 1969 Mustang",
+                tagline: "Unleash the legend: A true American icon.",
+                image: "https://placehold.co/400x300/b0b0b0/666666?text=Mustang",
+                images: [
+                    "https://placehold.co/600x400/B0B0B0/666666?text=Mustang+1",
+                    "https://placehold.co/100x70/D1D5DB/4B5563?text=Mustang+Thumb+2",
+                    "https://placehold.co/100x70/D1D5DB/4B5563?text=Mustang+Thumb+3",
+                    "https://placehold.co/100x70/D1D5DB/4B5563?text=Mustang+Thumb+4"
+                ],
+                currentBid: 45000,
+                expiryTime: Date.now() + 1000 * 60 * 60 * 2, // 2 hours from now
+                startTime: Date.now() - 1000 * 60 * 60 * 24 * 7, // 7 days ago
+                category: "vehicles",
+                description: "Experience the thrill of a bygone era with this meticulously restored 1969 Ford Mustang Fastback. Featuring its original 302 V8 engine, a smooth manual transmission, and a stunning Candy Apple Red paint job, this car is a head-turner. With low mileage and a clean title, it's ready for cruising or show. Don't miss your chance to own a piece of automotive history.",
+                specs: [
+                    "<strong>Make:</strong> Ford",
+                    "<strong>Model:</strong> Mustang Fastback",
+                    "<strong>Year:</strong> 1969",
+                    "<strong>Engine:</strong> 302 V8",
+                    "<strong>Transmission:</strong> Manual",
+                    "<strong>Color:</strong> Candy Apple Red",
+                    "<strong>Mileage:</strong> 65,000 original miles",
+                    "<strong>Condition:</strong> Fully restored, excellent running condition."
+                ],
+                bidHistory: [
+                    { bidder: "User***666", amount: 45000, time: Date.now() - 1000 * 60 * 1 },
+                    { bidder: "User***777", amount: 44500, time: Date.now() - 1000 * 60 * 10 },
+                    { bidder: "User***888", amount: 44000, time: Date.now() - 1000 * 60 * 30 },
+                    { bidder: "User***999", amount: 43500, time: Date.now() - 1000 * 60 * 60 }
+                ]
+            },
+            {
+                id: 5,
+                name: "Rare Stamp Collection",
+                tagline: "A philatelist's dream: historical and valuable.",
+                image: "https://placehold.co/400x300/a0a0a0/777777?text=Stamps",
+                images: [
+                    "https://placehold.co/600x400/A0A0A0/777777?text=Stamps+1",
+                    "https://placehold.co/100x70/D1D5DB/4B5563?text=Stamp+Thumb+2",
+                    "https://placehold.co/100x70/D1D5DB/4B5563?text=Stamp+Thumb+3"
+                ],
+                currentBid: 500,
+                expiryTime: Date.now() + 1000 * 60 * 10, // 10 minutes from now
+                startTime: Date.now() - 1000 * 60 * 60 * 24 * 5, // 5 days ago
+                category: "antiques",
+                description: "An impressive collection of rare and historically significant stamps, featuring issues from the early 20th century, including several unperforated and misprinted examples. This collection has been meticulously preserved in archival-quality albums and includes detailed provenance for each stamp. A must-have for serious philatelists or a unique investment opportunity.",
+                specs: [
+                    "<strong>Origin:</strong> Various countries (primarily US, UK, France)",
+                    "<strong>Period:</strong> Early 20th Century (1900-1950)",
+                    "<strong>Quantity:</strong> Over 200 unique stamps",
+                    "<strong>Condition:</strong> Mostly fine to very fine, some uncirculated.",
+                    "<strong>Provenance:</strong> Documented history for key stamps."
+                ],
+                bidHistory: [
+                    { bidder: "User***AAA", amount: 500, time: Date.now() - 1000 * 60 * 1 },
+                    { bidder: "User***BBB", amount: 480, time: Date.now() - 1000 * 60 * 5 }
+                ]
+            },
+            {
+                id: 6,
+                name: "High-End Gaming PC",
+                tagline: "Unleash ultimate gaming performance.",
+                image: "https://placehold.co/400x300/909090/888888?text=Gaming+PC",
+                images: [
+                    "https://placehold.co/600x400/909090/888888?text=Gaming+PC+1",
+                    "https://placehold.co/100x70/D1D5DB/4B5563?text=PC+Thumb+2",
+                    "https://placehold.co/100x70/D1D5DB/4B5563?text=PC+Thumb+3"
+                ],
+                currentBid: 2200,
+                expiryTime: Date.now() + 1000 * 60 * 60 * 24 * 1, // 1 day from now
+                startTime: Date.now() - 1000 * 60 * 60 * 12, // 12 hours ago
+                category: "electronics",
+                description: "Dominate any game with this custom-built, high-end gaming PC. Equipped with the latest generation Intel i9 processor, NVIDIA RTX 4080 graphics card, 32GB of DDR5 RAM, and a lightning-fast 2TB NVMe SSD. Liquid-cooled for optimal performance and housed in a sleek, RGB-lit case. Ready to run all modern titles at max settings.",
+                specs: [
+                    "<strong>Processor:</strong> Intel Core i9-14900K",
+                    "<strong>Graphics Card:</strong> NVIDIA GeForce RTX 4080",
+                    "<strong>RAM:</strong> 32GB DDR5-6000MHz",
+                    "<strong>Storage:</strong> 2TB NVMe SSD",
+                    "<strong>Cooling:</strong> 360mm AIO Liquid Cooler",
+                    "<strong>Operating System:</strong> Windows 11 Home",
+                    "<strong>Condition:</strong> Brand new, custom built."
+                ],
+                bidHistory: [
+                    { bidder: "User***CCC", amount: 2200, time: Date.now() - 1000 * 60 * 3 },
+                    { bidder: "User***DDD", amount: 2150, time: Date.now() - 1000 * 60 * 10 },
+                    { bidder: "User***EEE", amount: 2100, time: Date.now() - 1000 * 60 * 20 }
+                ]
+            },
+            {
+                id: 7,
+                name: "Diamond Necklace",
+                tagline: "Sparkling elegance, a true statement piece.",
+                image: "https://placehold.co/400x300/808080/999999?text=Necklace",
+                images: [
+                    "https://placehold.co/600x400/808080/999999?text=Diamond+Necklace+1",
+                    "https://placehold.co/100x70/D1D5DB/4B5563?text=Necklace+Thumb+2",
+                    "https://placehold.co/100x70/D1D5DB/4B5563?text=Necklace+Thumb+3"
+                ],
+                currentBid: 7500,
+                expiryTime: Date.now() + 1000 * 60 * 60 * 24 * 5, // 5 days from now
+                startTime: Date.now() - 1000 * 60 * 60 * 24 * 2, // 2 days ago
+                category: "jewelry",
+                description: "Adorn yourself with this breathtaking diamond solitaire necklace. Featuring a brilliant-cut 2.0-carat diamond, set in a delicate 18K white gold chain. The diamond boasts exceptional clarity (VS1) and color (G), ensuring maximum sparkle and fire. Accompanied by a GIA certification. Perfect for special occasions or as a cherished heirloom.",
+                specs: [
+                    "<strong>Gemstone:</strong> Natural Diamond",
+                    "<strong>Carat Weight:</strong> 2.0 Carats",
+                    "<strong>Cut:</strong> Brilliant Round",
+                    "<strong>Clarity:</strong> VS1",
+                    "<strong>Color:</strong> G",
+                    "<strong>Metal:</strong> 18K White Gold",
+                    "<strong>Length:</strong> 18 inches",
+                    "<strong>Certification:</strong> GIA Certified"
+                ],
+                bidHistory: [
+                    { bidder: "User***FFF", amount: 7500, time: Date.now() - 1000 * 60 * 15 },
+                    { bidder: "User***GGG", amount: 7200, time: Date.now() - 1000 * 60 * 45 }
+                ]
+            },
+            {
+                id: 8,
+                name: "Abstract Oil Painting",
+                tagline: "A vibrant expression of modern art.",
+                image: "https://placehold.co/400x300/707070/aaaaaa?text=Painting",
+                images: [
+                    "https://placehold.co/600x400/707070/aaaaaa?text=Abstract+Painting+1",
+                    "https://placehold.co/100x70/D1D5DB/4B5563?text=Painting+Thumb+2",
+                    "https://placehold.co/100x70/D1D5DB/4B5563?text=Painting+Thumb+3"
+                ],
+                currentBid: 1800,
+                expiryTime: Date.now() + 1000 * 60 * 60 * 6, // 6 hours from now
+                startTime: Date.now() - 1000 * 60 * 60 * 24 * 1, // 1 day ago
+                category: "art",
+                description: "This striking abstract oil painting, titled 'Urban Symphony,' captures the dynamic energy of city life through bold brushstrokes and a rich palette of blues, grays, and yellows. Created by emerging artist 'Luminara,' this piece is perfect for adding a contemporary touch to any living or office space. Comes with a certificate of authenticity.",
+                specs: [
+                    "<strong>Artist:</strong> Luminara",
+                    "<strong>Medium:</strong> Oil on Canvas",
+                    "<strong>Dimensions:</strong> 30\" x 40\"",
+                    "<strong>Style:</strong> Abstract Expressionism",
+                    "<strong>Year:</strong> 2024",
+                    "<strong>Frame:</strong> Unframed (gallery wrapped)",
+                    "<strong>Condition:</strong> New."
+                ],
+                bidHistory: [
+                    { bidder: "User***HHH", amount: 1800, time: Date.now() - 1000 * 60 * 10 },
+                    { bidder: "User***III", amount: 1700, time: Date.now() - 1000 * 60 * 30 }
+                ]
+            },
+            {
+                id: 9,
+                name: "Vintage Motorcycle",
+                tagline: "Ride into history with this classic beauty.",
+                image: "https://placehold.co/400x300/606060/bbbbbb?text=Motorcycle",
+                images: [
+                    "https://placehold.co/600x400/606060/bbbbbb?text=Vintage+Motorcycle+1",
+                    "https://placehold.co/100x70/D1D5DB/4B5563?text=Motorcycle+Thumb+2",
+                    "https://placehold.co/100x70/D1D5DB/4B5563?text=Motorcycle+Thumb+3"
+                ],
+                currentBid: 9000,
+                expiryTime: Date.now() + 1000 * 60 * 60 * 24 * 2, // 2 days from now
+                startTime: Date.now() - 1000 * 60 * 60 * 24 * 4, // 4 days ago
+                category: "vehicles",
+                description: "A beautifully preserved 1972 Triumph Bonneville T140V, a true icon of British motorcycling. This bike has undergone a sympathetic restoration, retaining much of its original character while ensuring mechanical reliability. Features a 750cc parallel-twin engine and classic styling. Perfect for enthusiasts or as a unique weekend rider.",
+                specs: [
+                    "<strong>Make:</strong> Triumph",
+                    "<strong>Model:</strong> Bonneville T140V",
+                    "<strong>Year:</strong> 1972",
+                    "<strong>Engine:</strong> 750cc Parallel-Twin",
+                    "<strong>Mileage:</strong> 25,000 (since restoration)",
+                    "<strong>Color:</strong> Red/White",
+                    "<strong>Condition:</strong> Restored, excellent running condition."
+                ],
+                bidHistory: [
+                    { bidder: "User***JJJ", amount: 9000, time: Date.now() - 1000 * 60 * 5 },
+                    { bidder: "User***KKK", amount: 8800, time: Date.now() - 1000 * 60 * 20 }
+                ]
+            },
+            {
+                id: 10,
+                name: "Smart Home Hub",
+                tagline: "Control your entire smart home with ease.",
+                image: "https://placehold.co/400x300/505050/cccccc?text=Smart+Hub",
+                images: [
+                    "https://placehold.co/600x400/505050/cccccc?text=Smart+Home+Hub+1",
+                    "https://placehold.co/100x70/D1D5DB/4B5563?text=Hub+Thumb+2",
+                    "https://placehold.co/100x70/D1D5DB/4B5563?text=Hub+Thumb+3"
+                ],
+                currentBid: 150,
+                expiryTime: Date.now() + 1000 * 60 * 45, // 45 minutes from now
+                startTime: Date.now() - 1000 * 60 * 60 * 5, // 5 hours ago
+                category: "electronics",
+                description: "The ultimate central control for your smart home devices. This hub seamlessly integrates with Zigbee, Z-Wave, Wi-Fi, and Bluetooth protocols, allowing you to manage lighting, thermostats, security cameras, and more from a single intuitive app. Features voice assistant compatibility and advanced automation capabilities.",
+                specs: [
+                    "<strong>Connectivity:</strong> Zigbee, Z-Wave, Wi-Fi, Bluetooth",
+                    "<strong>Compatibility:</strong> Works with Alexa, Google Assistant",
+                    "<strong>Features:</strong> Automation routines, remote access, energy monitoring.",
+                    "<strong>Condition:</strong> Like new, in original packaging."
+                ],
+                bidHistory: [
+                    { bidder: "User***LLL", amount: 150, time: Date.now() - 1000 * 60 * 2 },
+                    { bidder: "User***MMM", amount: 140, time: Date.now() - 1000 * 60 * 10 }
+                ]
+            },
+            {
+                id: 11,
+                name: "Expired Item Example",
+                tagline: "This auction has concluded.",
+                image: "https://placehold.co/400x300/404040/dddddd?text=Expired",
+                images: [
+                    "https://placehold.co/600x400/404040/dddddd?text=Expired+Item+1"
+                ],
+                currentBid: 100,
+                expiryTime: Date.now() - 1000 * 60 * 30, // 30 minutes ago (for testing expiry)
+                startTime: Date.now() - 1000 * 60 * 60 * 24 * 10, // 10 days ago
+                category: "antiques",
+                description: "This item serves as an example of an auction that has already ended. It was a rare collectible that garnered significant interest.",
+                specs: [
+                    "<strong>Status:</strong> Auction Ended",
+                    "<strong>Final Bid:</strong> $100.00",
+                    "<strong>Original Category:</strong> Antiques"
+                ],
+                bidHistory: [
+                    { bidder: "User***NNN", amount: 100, time: Date.now() - 1000 * 60 * 35 },
+                    { bidder: "User***OOO", amount: 90, time: Date.now() - 1000 * 60 * 40 }
+                ]
+            }
+        ];
+
+        const mainAuctionPage = document.getElementById('mainAuctionPage');
+        const productDetailPage = document.getElementById('productDetailPage');
+        const backToAuctionsBtn = document.getElementById('backToAuctionsBtn');
+
+        const auctionItemsGrid = document.getElementById('auctionItemsGrid');
+        const searchInput = document.getElementById('searchInput');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const sortOrder = document.getElementById('sortOrder');
+
+        // Product Detail Page Elements
+        const productNameElem = document.getElementById('productName');
+        const productTaglineElem = document.getElementById('productTagline');
+        const mainProductImageElem = document.getElementById('mainProductImage');
+        const productThumbnailsElem = document.getElementById('productThumbnails');
+        const productDescriptionElem = document.getElementById('productDescription');
+        const productSpecsElem = document.getElementById('productSpecs');
+        const auctionStartDateElem = document.getElementById('auctionStartDate');
+        const auctionEndDateElem = document.getElementById('auctionEndDate');
+        const currentHighestBidElem = document.getElementById('currentHighestBid');
+        const numberOfBidsElem = document.getElementById('numberOfBids');
+        const bidAmountInput = document.getElementById('bidAmount');
+        const placeBidButton = document.getElementById('placeBidButton');
+        const bidMessage = document.getElementById('bidMessage');
+        const bidHistoryTableBody = document.getElementById('bidHistoryTableBody');
+
+        let intervalId; // To store the interval ID for countdown updates
+        let currentProductIntervalId; // To store interval for product page countdown
+
+        /**
+         * Formats a number as currency.
+         * @param {number} amount - The amount to format.
+         * @returns {string} The formatted currency string.
+         */
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 0, // No cents for simplicity
+                maximumFractionDigits: 0
+            }).format(amount);
+        }
+
+        /**
+         * Formats a timestamp into a readable date and time string.
+         * @param {number} timestamp - The timestamp in milliseconds.
+         * @returns {string} The formatted date/time string.
+         */
+        function formatDateTime(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleString('en-US', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true
+            });
+        }
+
+        /**
+         * Calculates and formats the time remaining until expiry.
+         * @param {number} expiryTimestamp - The expiry time in milliseconds.
+         * @returns {string} The formatted time remaining string.
+         */
+        function getTimeRemaining(expiryTimestamp) {
+            const now = Date.now();
+            const difference = expiryTimestamp - now;
+
+            if (difference <= 0) {
+                return "Expired";
+            }
+
+            const seconds = Math.floor((difference / 1000) % 60);
+            const minutes = Math.floor((difference / (1000 * 60)) % 60);
+            const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
+            const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+
+            let timeString = "";
+            if (days > 0) timeString += `${days}d `;
+            if (hours > 0) timeString += `${hours}h `;
+            if (minutes > 0) timeString += `${minutes}m `;
+            if (seconds > 0) timeString += `${seconds}s`;
+
+            return timeString.trim();
+        }
+
+        /**
+         * Renders the auction items to the DOM.
+         * @param {Array} itemsToDisplay - The array of auction items to render.
+         */
+        function renderAuctionItems(itemsToDisplay) {
+            auctionItemsGrid.innerHTML = ''; // Clear existing items
+
+            itemsToDisplay.forEach(item => {
+                const timeRemaining = getTimeRemaining(item.expiryTime);
+                const isExpired = timeRemaining === "Expired";
+
+                const itemCard = document.createElement('div');
+                itemCard.className = `auction-card bg-white rounded-xl shadow-md overflow-hidden ${isExpired ? 'opacity-60 grayscale' : ''}`;
+                itemCard.innerHTML = `
+                    <img src="${item.image}" alt="${item.name}" class="w-full h-48 object-cover">
+                    <div class="p-5">
+                        <h3 class="font-semibold text-lg text-gray-800 mb-2">${item.name}</h3>
+                        <p class="text-gray-600 text-sm mb-1">Category: <span class="capitalize font-medium">${item.category}</span></p>
+                        <p class="text-gray-700 text-xl font-bold mb-3">Current Bid: ${formatCurrency(item.currentBid)}</p>
+                        <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
+                            <span>Time Left:</span>
+                            <span class="font-semibold text-red-600" data-expiry-id="${item.id}">${timeRemaining}</span>
+                        </div>
+                        <button class="view-details-button w-full py-3 rounded-lg font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-colors duration-200"
+                                data-item-id="${item.id}">
+                            View Details
+                        </button>
+                    </div>
+                `;
+                auctionItemsGrid.appendChild(itemCard);
+            });
+
+            // Attach event listeners to view details buttons
+            document.querySelectorAll('.view-details-button').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const itemId = parseInt(event.target.dataset.itemId);
+                    showProductDetailPage(itemId);
+                });
+            });
+        }
+
+        /**
+         * Updates the countdown timers on the displayed auction items.
+         */
+        function updateCountdowns() {
+            document.querySelectorAll('[data-expiry-id]').forEach(span => {
+                const itemId = parseInt(span.dataset.expiryId);
+                const item = auctionItems.find(i => i.id === itemId);
+                if (item) {
+                    const timeRemaining = getTimeRemaining(item.expiryTime);
+                    span.textContent = timeRemaining;
+                    if (timeRemaining === "Expired") {
+                        const card = span.closest('.auction-card');
+                        if (card && !card.classList.contains('opacity-60')) {
+                            card.classList.add('opacity-60', 'grayscale');
+                            const viewDetailsButton = card.querySelector('.view-details-button');
+                            if (viewDetailsButton) {
+                                viewDetailsButton.textContent = 'Auction Ended';
+                                viewDetailsButton.disabled = true;
+                                viewDetailsButton.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'text-white');
+                                viewDetailsButton.classList.add('bg-gray-400', 'cursor-not-allowed');
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        /**
+         * Filters and sorts the auction items based on current selections.
+         * Then re-renders the displayed items.
+         */
+        function filterAndSortItems() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const selectedCategory = categoryFilter.value;
+            const selectedSortOrder = sortOrder.value;
+
+            let filteredItems = auctionItems.filter(item => {
+                const matchesSearch = item.name.toLowerCase().includes(searchTerm) ||
+                                      item.category.toLowerCase().includes(searchTerm);
+                const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
+                return matchesSearch && matchesCategory;
+            });
+
+            // Sort items
+            filteredItems.sort((a, b) => {
+                if (selectedSortOrder === 'expiry-asc') {
+                    const aExpired = getTimeRemaining(a.expiryTime) === "Expired";
+                    const bExpired = getTimeRemaining(b.expiryTime) === "Expired";
+
+                    if (aExpired && !bExpired) return 1;
+                    if (!aExpired && bExpired) return -1;
+                    if (aExpired && bExpired) return 0;
+
+                    return a.expiryTime - b.expiryTime;
+                } else if (selectedSortOrder === 'expiry-desc') {
+                    const aExpired = getTimeRemaining(a.expiryTime) === "Expired";
+                    const bExpired = getTimeRemaining(b.expiryTime) === "Expired";
+
+                    if (aExpired && !bExpired) return 1;
+                    if (!aExpired && bExpired) return -1;
+                    if (aExpired && bExpired) return 0;
+
+                    return b.expiryTime - a.expiryTime;
+                } else if (selectedSortOrder === 'bid-asc') {
+                    return a.currentBid - b.currentBid;
+                } else if (selectedSortOrder === 'bid-desc') {
+                    return b.currentBid - a.currentBid;
+                }
+                return 0;
+            });
+
+            renderAuctionItems(filteredItems);
+        }
+
+        /**
+         * Displays the product detail page for a given item ID.
+         * @param {number} itemId - The ID of the auction item to display.
+         */
+        function showProductDetailPage(itemId) {
+            const item = auctionItems.find(i => i.id === itemId);
+            if (!item) {
+                alert("Product not found.");
+                return;
+            }
+
+            // Hide main page, show product detail page
+            mainAuctionPage.classList.add('hidden');
+            productDetailPage.classList.remove('hidden');
+
+            // Populate product details
+            productNameElem.textContent = item.name;
+            productTaglineElem.textContent = item.tagline;
+            mainProductImageElem.src = item.images[0];
+            mainProductImageElem.alt = item.name + " - Main View";
+
+            // Populate thumbnails
+            productThumbnailsElem.innerHTML = '';
+            item.images.forEach((imgSrc, index) => {
+                const thumb = document.createElement('img');
+                thumb.src = imgSrc;
+                thumb.alt = `Thumbnail ${index + 1}`;
+                thumb.className = 'w-24 h-16 object-cover rounded-md cursor-pointer border-2 border-transparent hover:border-blue-500 transition-all duration-200';
+                thumb.onclick = () => mainProductImageElem.src = imgSrc;
+                productThumbnailsElem.appendChild(thumb);
+            });
+
+            productDescriptionElem.textContent = item.description;
+
+            // Populate specifications
+            productSpecsElem.innerHTML = '';
+            item.specs.forEach(spec => {
+                const li = document.createElement('li');
+                li.innerHTML = spec; // Use innerHTML as specs might contain strong tags
+                productSpecsElem.appendChild(li);
+            });
+
+            auctionStartDateElem.textContent = formatDateTime(item.startTime);
+            auctionEndDateElem.textContent = formatDateTime(item.expiryTime);
+            currentHighestBidElem.textContent = formatCurrency(item.currentBid);
+            numberOfBidsElem.textContent = item.bidHistory.length;
+
+            // Update bid input min value
+            bidAmountInput.min = item.currentBid + 1;
+
+            // Clear previous bid message
+            bidMessage.textContent = '';
+            bidMessage.classList.add('hidden');
+
+            // Populate bid history
+            bidHistoryTableBody.innerHTML = '';
+            // Sort bid history from newest to oldest
+            const sortedBidHistory = [...item.bidHistory].sort((a, b) => b.time - a.time);
+            sortedBidHistory.forEach(bid => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${bid.bidder}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-semibold">${formatCurrency(bid.amount)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDateTime(bid.time)}</td>
+                `;
+                bidHistoryTableBody.appendChild(tr);
+            });
+
+            // Handle "Place Bid" button logic for the current product
+            placeBidButton.onclick = () => {
+                const bidAmount = parseFloat(bidAmountInput.value);
+                const currentHighestBid = item.currentBid;
+
+                if (isNaN(bidAmount) || bidAmount <= 0) {
+                    bidMessage.textContent = 'Please enter a valid bid amount.';
+                    bidMessage.classList.remove('hidden', 'text-green-500');
+                    bidMessage.classList.add('text-red-500');
+                } else if (bidAmount <= currentHighestBid) {
+                    bidMessage.textContent = `Your bid must be higher than the current highest bid (${formatCurrency(currentHighestBid)}).`;
+                    bidMessage.classList.remove('hidden', 'text-green-500');
+                    bidMessage.classList.add('text-red-500');
+                } else {
+                    // Simulate placing a bid
+                    item.currentBid = bidAmount; // Update current bid
+                    item.bidHistory.unshift({ // Add new bid to history
+                        bidder: "You***", // Placeholder for current user
+                        amount: bidAmount,
+                        time: Date.now()
+                    });
+                    item.bidHistory.sort((a, b) => b.time - a.time); // Re-sort history
+                    
+                    currentHighestBidElem.textContent = formatCurrency(item.currentBid); // Update displayed bid
+                    numberOfBidsElem.textContent = item.bidHistory.length; // Update bid count
+
+                    // Re-render bid history table
+                    bidHistoryTableBody.innerHTML = '';
+                    item.bidHistory.forEach(bid => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${bid.bidder}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-green-600 font-semibold">${formatCurrency(bid.amount)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${formatDateTime(bid.time)}</td>
+                        `;
+                        bidHistoryTableBody.appendChild(tr);
+                    });
+
+                    bidMessage.textContent = `Bid of ${formatCurrency(bidAmount)} placed successfully!`;
+                    bidMessage.classList.remove('hidden', 'text-red-500');
+                    bidMessage.classList.add('text-green-500');
+                    bidAmountInput.value = ''; // Clear the input field
+                    bidAmountInput.min = item.currentBid + 1; // Update min bid for next bid
+                }
+            };
+
+            // Stop main page countdown and start product page countdown if needed
+            if (intervalId) clearInterval(intervalId);
+            if (currentProductIntervalId) clearInterval(currentProductIntervalId);
+            currentProductIntervalId = setInterval(() => {
+                // Update expiry time on the product detail page
+                const timeRemainingSpan = document.querySelector('#auctionEndDate');
+                const timeRemaining = getTimeRemaining(item.expiryTime);
+                timeRemainingSpan.textContent = timeRemaining;
+                if (timeRemaining === "Expired") {
+                    // Disable bid button if auction ends
+                    placeBidButton.textContent = 'Auction Ended';
+                    placeBidButton.disabled = true;
+                    placeBidButton.classList.remove('bg-blue-600', 'hover:bg-blue-700', 'text-white');
+                    placeBidButton.classList.add('bg-gray-400', 'cursor-not-allowed');
+                    if (currentProductIntervalId) clearInterval(currentProductIntervalId);
+                }
+            }, 1000);
+        }
+
+        /**
+         * Hides the product detail page and shows the main auction listing.
+         */
+        function hideProductDetailPage() {
+            productDetailPage.classList.add('hidden');
+            mainAuctionPage.classList.remove('hidden');
+            if (currentProductIntervalId) clearInterval(currentProductIntervalId); // Stop product page countdown
+            intervalId = setInterval(updateCountdowns, 1000); // Restart main page countdown
+            filterAndSortItems(); // Re-render main page to reflect any changes (like expired items)
+        }
+
+        // Event Listeners for main page filters/sort
+        searchInput.addEventListener('input', filterAndSortItems);
+        categoryFilter.addEventListener('change', filterAndSortItems);
+        sortOrder.addEventListener('change', filterAndSortItems);
+
+        // Event Listener for back button on product detail page
+        backToAuctionsBtn.addEventListener('click', hideProductDetailPage);
+
+        // Initial render and start countdown interval for main page
+        window.onload = function() {
+            filterAndSortItems(); // Initial display of auction items
+            intervalId = setInterval(updateCountdowns, 1000); // Update countdown every second
+        };
+
+        // Optional: Clear intervals if page is unloaded
+        window.onbeforeunload = function() {
+            if (intervalId) {
+                clearInterval(intervalId);
+            }
+            if (currentProductIntervalId) {
+                clearInterval(currentProductIntervalId);
+            }
+        };
+
+        // Custom alert function (replaces window.alert)
+        function alert(message) {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full text-center">
+                    <p class="text-lg font-semibold mb-4">${message}</p>
+                    <button id="closeModal" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg">OK</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            document.getElementById('closeModal').onclick = () => {
+                document.body.removeChild(modal);
+            };
+        }
+    </script>
+</body>
+</html>

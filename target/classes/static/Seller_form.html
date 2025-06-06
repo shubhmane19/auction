@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Seller Form - List Auction Item</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
+  <!-- Font Awesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+  <style>
+    /* Reset & Global Styles */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, #f4f7f9, #e0e5ec);
+      color: #333;
+      line-height: 1.6;
+    }
+    header {
+      background: #fff;
+      padding: 15px 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header .logo {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: #4e73df;
+    }
+    nav a {
+      text-decoration: none;
+      color: #333;
+      margin-left: 15px;
+      font-size: 1rem;
+      transition: color 0.3s;
+    }
+    nav a:hover {
+      color: #4e73df;
+    }
+    .container {
+      max-width: 700px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 2rem;
+      color: #4e73df;
+    }
+    form {
+      background: #fff;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      transition: transform 0.3s;
+    }
+    form:hover {
+      transform: scale(1.01);
+    }
+    .form-group {
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #555;
+    }
+    input[type="text"],
+    input[type="number"],
+    input[type="date"],
+    textarea,
+    select {
+      width: 100%;
+      padding: 12px 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+    input:focus, textarea:focus, select:focus {
+      border-color: #4e73df;
+      box-shadow: 0 0 8px rgba(78, 115, 223, 0.4);
+      outline: none;
+    }
+    textarea {
+      resize: vertical;
+    }
+    input[type="file"] {
+      border: none;
+      margin-top: 5px;
+    }
+    .preview-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .preview-container img {
+      width: 100px;
+      height: 100px;
+      border-radius: 8px;
+      object-fit: cover;
+      border: 1px solid #ccc;
+    }
+    button {
+      display: block;
+      width: 100%;
+      background: #4e73df;
+      color: #fff;
+      border: none;
+      padding: 12px;
+      font-size: 1.1rem;
+      border-radius: 25px;
+      margin-top: 20px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #3a5cad;
+    }
+    footer {
+      background: #e9ecef;
+      text-align: center;
+      padding: 20px 0;
+      font-size: 0.9rem;
+      color: #666;
+      margin-top: 40px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="logo">Auction House</div>
+    <nav>
+      <a href="auction_management.html">Dashboard</a>
+    </nav>
+  </header>
+  
+  <!-- Main Content: Seller Form -->
+  <div class="container">
+    <h1>List Your Auction Item</h1>
+    <form id="sellerForm">
+      <div class="form-group">
+        <label for="title"><i class="fas fa-tag"></i> Product Title</label>
+        <input type="text" id="title" name="title" placeholder="Enter product title" required>
+      </div>
+      <div class="form-group">
+        <label for="description"><i class="fas fa-align-left"></i> Description</label>
+        <textarea id="description" name="description" rows="4" placeholder="Describe your product" required></textarea>
+      </div>
+      <div class="form-group">
+        <label for="startPrice"><i class="fas fa-rupee-sign"></i> Starting Price</label>
+        <input type="number" id="startPrice" name="startPrice" placeholder="Enter starting price" required>
+      </div>
+      <div class="form-group">
+        <label for="category"><i class="fas fa-list"></i> Category</label>
+        <select id="category" name="category" required>
+          <option value="">Select Category</option>
+          <option value="electronics">Electronics</option>
+          <option value="fashion">Fashion</option>
+          <option value="antiques">Antiques</option>
+          <option value="collectibles">Collectibles</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="startDate"><i class="fas fa-calendar-alt"></i> Auction Start Date</label>
+        <input type="date" id="startDate" name="startDate" required>
+      </div>
+      <div class="form-group">
+        <label for="endDate"><i class="fas fa-calendar-alt"></i> Auction End Date</label>
+        <input type="date" id="endDate" name="endDate" required>
+      </div>
+      <div class="form-group">
+        <label for="images"><i class="fas fa-image"></i> Upload Images</label>
+        <input type="file" id="images" name="images[]" multiple accept="image/*">
+        <div class="preview-container" id="preview"></div>
+      </div>
+      <button type="submit">Submit Listing</button>
+    </form>
+  </div>
+  
+  <!-- Footer -->
+  <footer>
+    <p>&copy; 2025 Auction House. All rights reserved.</p>
+  </footer>
+  
+  <script>
+    // Image preview functionality
+    document.getElementById('images').addEventListener('change', function(event) {
+      const previewContainer = document.getElementById('preview');
+      previewContainer.innerHTML = '';
+      Array.from(event.target.files).forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const img = document.createElement('img');
+          img.src = e.target.result;
+          previewContainer.appendChild(img);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+  </script>
+</body>
+</html>
